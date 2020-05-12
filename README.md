@@ -14,6 +14,7 @@ Example:
 Todos:
 
 - [ ] Tokenize
+- [ ] Symbol table
 - [ ] Parse
 - [ ] Evaluate
 
