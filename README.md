@@ -1,4 +1,4 @@
-# Brent-Lisp
+# Brent-Lang
 
 A small experiment with writing an interpreter for a lisp-like language.
 
@@ -10,11 +10,6 @@ Example:
 
 (print name)
 ```
-
-Planned features:
-
-- `define`, `let`
-- `lambda`
 
 Todos:
 
