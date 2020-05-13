@@ -3,7 +3,6 @@
 #include <string.h>
 
 enum brent_lang_tokens {
-	BR_T_WHITESPACE,
 	BR_T_ID,
 	BR_T_PAREN_OPEN,
 	BR_T_PAREN_CLOSE
@@ -12,9 +11,11 @@ typedef enum brent_lang_tokens br_token_t;
 
 enum brent_lang_token_states {
 	BR_STATE_INIT,
-	BR_STATE_WHITESPACE,
 	BR_STATE_ID,
-	BR_STATE_NUM
+	BR_STATE_NUM,
+	BR_STATE_NUM_FLOAT,
+	BR_STATE_LINE_COMMENT,
+	BR_STATE_STRING
 };
 typedef enum brent_lang_token_states br_state_t;
 
@@ -45,6 +46,10 @@ int is_digit(char c) {
 	return c >= 48 && c <= 57;
 }
 
+int is_digit_with_dot(char c) {
+	return is_digit(c) || c == '.';
+}
+
 int is_paren_open(char c) {
 	return c == '(';
 }
@@ -55,6 +60,64 @@ int is_paren_close(char c) {
 
 int is_id(char c) {
 	return is_valid_char(c);
+}
+
+int is_line_comment(char c) {
+	return c == ';';
+}
+
+int is_comment(char c) {
+	return is_line_comment(c);
+}
+
+int is_newline(char c) {
+	return c == '\n';
+}
+
+int is_uppercase(char c) {
+	return (c >= 65 && c <= 90);
+}
+
+int is_lowercase(char c) {
+	return (c >= 97 && c <= 122);
+}
+
+int is_operator(char c) {
+	return c == '-'
+		;
+}
+
+int is_id_start(char c) {
+	return is_uppercase(c) || is_lowercase(c) || is_operator(c);
+}
+
+int is_paren(char c) {
+	return is_paren_open(c) || is_paren_close(c);
+}
+
+int is_string(char c) {
+	return c == '"';
+}
+
+int is_breaker(char c) {
+	return is_paren(c) || is_comment(c) || is_whitespace(c);
+}
+
+int is_dot(char c) {
+	return c == '.';
+}
+
+void handle_breaker(char c, br_state_t *state) {
+	*state = BR_STATE_INIT; // set default state
+	if (is_paren_open(c)) {
+		token_add(BR_T_PAREN_OPEN);
+	}
+	if (is_paren_close(c)) {
+		token_add(BR_T_PAREN_CLOSE);
+	}
+	if (is_line_comment(c)) {
+		*state = BR_STATE_LINE_COMMENT;
+	}
 }
 
 void tokenize(const char *buf, size_t bufsize) {
@@ -68,42 +131,69 @@ void tokenize(const char *buf, size_t bufsize) {
 
 		switch (state) {
 			case BR_STATE_INIT:
-				if (is_digit(c)) {
-					state = BR_STATE_NUM;
-					start = i;
-				}
 				if (is_paren_open(c)) {
 					token_add(BR_T_PAREN_OPEN);
 				}
 				if (is_paren_close(c)) {
 					token_add(BR_T_PAREN_CLOSE);
 				}
-				if (is_whitespace(c)) {
-					state = BR_STATE_WHITESPACE;
-					token_add(BR_T_WHITESPACE);
+				if (is_digit(c)) {
+					state = BR_STATE_NUM;
+					start = i;
+				}
+				if (is_id_start(c)) {
+					state = BR_STATE_ID;
+					start = i;
+				}
+				if (is_string(c)) {
+					state = BR_STATE_STRING;
+					start = i;
+				}
+				if (is_line_comment(c)) {
+					state = BR_STATE_LINE_COMMENT;
 				}
 				break;
 			case BR_STATE_NUM:
+				if (is_dot(c)) {
+					state = BR_STATE_NUM_FLOAT;
+					break;
+				}
 				if (is_digit(c)) break;
 
+				// TODO; Handle '123xyz'
 				token_add_id(buf, start, i);
-				if (is_whitespace(c)) {
-					state = BR_STATE_WHITESPACE;
-					token_add(BR_T_WHITESPACE);
-				}
-				if (is_paren_open(c)) {
-					state = BR_STATE_INIT;
-					token_add(BR_T_PAREN_OPEN);
-				}
-				if (is_paren_close(c)) {
-					state = BR_STATE_INIT;
-					token_add(BR_T_PAREN_CLOSE);
+				if (is_breaker(c)) {
+					handle_breaker(c, &state);
+					break;
 				}
 				break;
-			case BR_STATE_WHITESPACE:
-				if (is_digit(c)) {
-					state = BR_STATE_NUM;
-					start = i;
+			case BR_STATE_NUM_FLOAT:
+				if (is_digit(c)) break;
+				
+				// TODO; Handle '123.99xyz'
+				token_add_id(buf, start, i);
+				if (is_breaker(c)) {
+					handle_breaker(c, &state);
+					break;
+				}
+				break;
+			case BR_STATE_ID:
+				if (is_valid_char(c)) break;
+
+				token_add_id(buf, start, i);
+				if (is_breaker(c)) {
+					handle_breaker(c, &state);
+				}
+				break;
+			case BR_STATE_STRING:
+				if (!is_string(c)) break;
+
+				token_add_id(buf, start, i+1); // add closing quotation mark
+				handle_breaker(c, &state);
+				break;
+			case BR_STATE_LINE_COMMENT:
+				if (is_newline(c)) {
+					state = BR_STATE_INIT;
 				}
 				break;
 			default:
@@ -114,11 +204,7 @@ void tokenize(const char *buf, size_t bufsize) {
 }
 
 int is_valid_char(char c) {
-	return (c >= 48 && c <= 57) // 0-9
-		|| (c >= 65 && c <= 90) // A-Z
-		|| (c >= 97 && c <= 122) // a-z
-		|| (c == 45) // '-'
-		;
+	return is_id_start(c) || is_digit(c);
 }
 
 void token_add(br_token_t token) {
