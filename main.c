@@ -11,7 +11,8 @@ typedef enum brent_lang_tokens br_token_t;
 
 enum brent_lang_token_states {
 	BR_STATE_INIT,
-	BR_STATE_ID,
+	BR_STATE_ATOM,
+	BR_STATE_NAME,
 	BR_STATE_NUM,
 	BR_STATE_NUM_FLOAT,
 	BR_STATE_LINE_COMMENT,
@@ -45,6 +46,10 @@ int is_whitespace(char c) {
 
 int is_digit(char c) {
 	return c >= 48 && c <= 57;
+}
+
+int is_number(char c) {
+	return is_digit(c);
 }
 
 int is_digit_with_dot(char c) {
@@ -83,46 +88,30 @@ int is_lowercase(char c) {
 	return (c >= 97 && c <= 122);
 }
 
-int is_operator(char c) {
-	return c == '-'
-		;
+int is_char(char c) {
+	return is_uppercase(c) || is_lowercase(c);
 }
 
-int is_id_start(char c) {
-	return is_uppercase(c) || is_lowercase(c) || is_operator(c);
-}
-
-int is_paren(char c) {
-	return is_paren_open(c) || is_paren_close(c);
+int is_char_ext(char c) {
+	return is_char(c) || is_digit(c) || c == '-' || c == '?' || c == '!';
 }
 
 int is_string(char c) {
 	return c == '"';
 }
 
-int is_breaker(char c) {
-	return is_paren(c) || is_comment(c) || is_whitespace(c);
+int is_atom(char c) {
+	return is_char(c) || is_digit(c) || is_string(c);
 }
 
-int is_dot(char c) {
-	return c == '.';
+int is_paren(char c) {
+	return is_paren_open(c) || is_paren_close(c);
 }
 
-void handle_breaker(char c, br_state_t *state) {
-	*state = BR_STATE_INIT; // set default state
-	if (is_paren_open(c)) {
-		token_add(BR_T_PAREN_OPEN);
-	}
-	if (is_paren_close(c)) {
-		token_add(BR_T_PAREN_CLOSE);
-	}
-	if (is_line_comment(c)) {
-		*state = BR_STATE_LINE_COMMENT;
-	}
-}
 
 void tokenize(const char *buf, size_t bufsize) {
 	static br_state_t state = BR_STATE_INIT;
+	static int line = 0;
 	int start = 0;
 	for (int i=0; i < bufsize; i++) {
 		char c = buf[i];
@@ -132,80 +121,81 @@ void tokenize(const char *buf, size_t bufsize) {
 
 		switch (state) {
 			case BR_STATE_INIT:
+				if (c == ';') {
+					state = BR_STATE_LINE_COMMENT;
+					break;
+				}
 				if (is_paren_open(c)) {
 					token_add(BR_T_PAREN_OPEN);
-				} else if (is_paren_close(c)) {
+					break;
+				}
+				if (is_paren_close(c)) {
 					token_add(BR_T_PAREN_CLOSE);
-				} else 	if (is_digit(c)) {
+					break;
+				}
+				if (is_atom(c)) {
+					state = BR_STATE_ATOM;
+					i--;
+				}
+				break;
+			case BR_STATE_ATOM:
+				if (is_char(c)) {
+					state = BR_STATE_NAME;
+				} else if (is_number(c) || c == '-') {
 					state = BR_STATE_NUM;
-					start = i;
-				} else if (is_id_start(c)) {
-					state = BR_STATE_ID;
-					start = i;
-				} else 	if (is_string(c)) {
+				} else if (is_string(c)) {
 					state = BR_STATE_STRING;
-					start = i;
-				} else if (is_line_comment(c)) {
-					state = BR_STATE_LINE_COMMENT;
-				} else if (is_whitespace(c)) {
-					;
 				} else {
-					printf("Unknown char encountered: %c\n", c);
-					state = BR_STATE_ERROR;
+					fprintf(stderr, "Unexpected char %c\n", c);
+					exit(-1);
+				}
+				start = i; // begin consuming the element
+				break;
+			case BR_STATE_NAME:
+				if (is_char_ext(c)) {
+					state = BR_STATE_NAME;
+				} else {
+					token_add_id(buf, start, i);
+					state = BR_STATE_INIT;
+					i--; // do not consume this char
 				}
 				break;
 			case BR_STATE_NUM:
-				if (is_dot(c)) {
+				if (is_digit(c)) {
+					state = BR_STATE_NUM;
+				} else if (c == '.') {
 					state = BR_STATE_NUM_FLOAT;
-					break;
-				}
-				if (is_digit(c)) break;
-
-				if (is_breaker(c)) {
-					token_add_id(buf, start, i);
-					handle_breaker(c, &state);
-					break;
 				} else {
-					printf("Invalid character: %c\n", c);
-					state = BR_STATE_ERROR;
+					token_add_id(buf, start, i);
+					state = BR_STATE_INIT;
+					i--; // do not consume this char
 				}
 				break;
 			case BR_STATE_NUM_FLOAT:
-				if (is_digit(c)) break;
-				
-				if (is_breaker(c)) {
-					token_add_id(buf, start, i);
-					handle_breaker(c, &state);
+				if (is_digit(c)) {
 					break;
 				} else {
-					printf("Invalid character: %c\n", c);
-					state = BR_STATE_ERROR;
-				}
-				break;
-			case BR_STATE_ID:
-				if (is_valid_char(c)) break;
-
-				if (is_breaker(c)) {
 					token_add_id(buf, start, i);
-					handle_breaker(c, &state);
-				} else {
-					printf("Invalid character: %c\n:", c);
-					state = BR_STATE_ERROR;
+					state = BR_STATE_INIT;
+					i--; // do not consume this char
 				}
 				break;
 			case BR_STATE_STRING:
-				if (!is_string(c)) break;
-
-				token_add_id(buf, start, i+1); // add closing quotation mark
-				handle_breaker(c, &state);
+				if (is_string(c)) {
+					token_add_id(buf, start, i+1);
+					state = BR_STATE_INIT;
+					break;
+				} else if (is_newline(c)) {
+					fprintf(stderr, "Unterminated string on line %d\n", line);
+					exit(-1);
+				}
 				break;
 			case BR_STATE_LINE_COMMENT:
 				if (is_newline(c)) {
+					line++;
 					state = BR_STATE_INIT;
 				}
 				break;
-			case BR_STATE_ERROR:
-				exit(-1);
 			default:
 				printf("Unknown scanner state: %d\n", state);
 				break;
@@ -214,7 +204,7 @@ void tokenize(const char *buf, size_t bufsize) {
 }
 
 int is_valid_char(char c) {
-	return is_id_start(c) || is_digit(c);
+	return 0; 
 }
 
 void token_add(br_token_t token) {

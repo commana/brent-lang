@@ -20,5 +20,4 @@
 ; (42xyz)
 ; (: x y)
 ; (yolo:23) ; might allow this in the future
-(no-closing-paren
-("no closing quotation mark
+; ("no closing quotation mark
