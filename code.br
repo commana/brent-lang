@@ -14,3 +14,11 @@
 	; :o
 	(list)
 )
+
+; these will fail:
+; (42.xyz)
+; (42xyz)
+; (: x y)
+; (yolo:23) ; might allow this in the future
+(no-closing-paren
+("no closing quotation mark

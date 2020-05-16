@@ -15,7 +15,8 @@ enum brent_lang_token_states {
 	BR_STATE_NUM,
 	BR_STATE_NUM_FLOAT,
 	BR_STATE_LINE_COMMENT,
-	BR_STATE_STRING
+	BR_STATE_STRING,
+	BR_STATE_ERROR
 };
 typedef enum brent_lang_token_states br_state_t;
 
@@ -133,24 +134,24 @@ void tokenize(const char *buf, size_t bufsize) {
 			case BR_STATE_INIT:
 				if (is_paren_open(c)) {
 					token_add(BR_T_PAREN_OPEN);
-				}
-				if (is_paren_close(c)) {
+				} else if (is_paren_close(c)) {
 					token_add(BR_T_PAREN_CLOSE);
-				}
-				if (is_digit(c)) {
+				} else 	if (is_digit(c)) {
 					state = BR_STATE_NUM;
 					start = i;
-				}
-				if (is_id_start(c)) {
+				} else if (is_id_start(c)) {
 					state = BR_STATE_ID;
 					start = i;
-				}
-				if (is_string(c)) {
+				} else 	if (is_string(c)) {
 					state = BR_STATE_STRING;
 					start = i;
-				}
-				if (is_line_comment(c)) {
+				} else if (is_line_comment(c)) {
 					state = BR_STATE_LINE_COMMENT;
+				} else if (is_whitespace(c)) {
+					;
+				} else {
+					printf("Unknown char encountered: %c\n", c);
+					state = BR_STATE_ERROR;
 				}
 				break;
 			case BR_STATE_NUM:
@@ -160,29 +161,36 @@ void tokenize(const char *buf, size_t bufsize) {
 				}
 				if (is_digit(c)) break;
 
-				// TODO; Handle '123xyz'
-				token_add_id(buf, start, i);
 				if (is_breaker(c)) {
+					token_add_id(buf, start, i);
 					handle_breaker(c, &state);
 					break;
+				} else {
+					printf("Invalid character: %c\n", c);
+					state = BR_STATE_ERROR;
 				}
 				break;
 			case BR_STATE_NUM_FLOAT:
 				if (is_digit(c)) break;
 				
-				// TODO; Handle '123.99xyz'
-				token_add_id(buf, start, i);
 				if (is_breaker(c)) {
+					token_add_id(buf, start, i);
 					handle_breaker(c, &state);
 					break;
+				} else {
+					printf("Invalid character: %c\n", c);
+					state = BR_STATE_ERROR;
 				}
 				break;
 			case BR_STATE_ID:
 				if (is_valid_char(c)) break;
 
-				token_add_id(buf, start, i);
 				if (is_breaker(c)) {
+					token_add_id(buf, start, i);
 					handle_breaker(c, &state);
+				} else {
+					printf("Invalid character: %c\n:", c);
+					state = BR_STATE_ERROR;
 				}
 				break;
 			case BR_STATE_STRING:
@@ -196,6 +204,8 @@ void tokenize(const char *buf, size_t bufsize) {
 					state = BR_STATE_INIT;
 				}
 				break;
+			case BR_STATE_ERROR:
+				exit(-1);
 			default:
 				printf("Unknown scanner state: %d\n", state);
 				break;
