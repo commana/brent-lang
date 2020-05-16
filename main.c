@@ -98,7 +98,7 @@ int is_atom(char c) {
 
 void tokenize(const char *buf, size_t bufsize) {
 	static br_state_t state = BR_STATE_INIT;
-	static int line = 0;
+	static int line = 1;
 	int start = 0;
 	for (int i=0; i < bufsize; i++) {
 		char c = buf[i];
@@ -122,7 +122,7 @@ void tokenize(const char *buf, size_t bufsize) {
 				}
 				if (is_atom(c)) {
 					state = BR_STATE_ATOM;
-					i--;
+					i--; // do not consume this char
 				}
 				break;
 			case BR_STATE_ATOM:
@@ -160,7 +160,7 @@ void tokenize(const char *buf, size_t bufsize) {
 				break;
 			case BR_STATE_NUM_FLOAT:
 				if (is_digit(c)) {
-					break;
+					state = BR_STATE_NUM_FLOAT;
 				} else {
 					token_add_id(buf, start, i);
 					state = BR_STATE_INIT;
@@ -179,13 +179,15 @@ void tokenize(const char *buf, size_t bufsize) {
 				break;
 			case BR_STATE_LINE_COMMENT:
 				if (is_newline(c)) {
-					line++;
 					state = BR_STATE_INIT;
 				}
 				break;
 			default:
 				printf("Unknown scanner state: %d\n", state);
 				break;
+		}
+		if (is_newline(c)) {
+			line++;
 		}
 	}
 }
