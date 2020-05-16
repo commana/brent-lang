@@ -52,20 +52,12 @@ int is_number(char c) {
 	return is_digit(c);
 }
 
-int is_digit_with_dot(char c) {
-	return is_digit(c) || c == '.';
-}
-
 int is_paren_open(char c) {
 	return c == '(';
 }
 
 int is_paren_close(char c) {
 	return c == ')';
-}
-
-int is_id(char c) {
-	return is_valid_char(c);
 }
 
 int is_line_comment(char c) {
@@ -104,11 +96,6 @@ int is_atom(char c) {
 	return is_char(c) || is_digit(c) || is_string(c);
 }
 
-int is_paren(char c) {
-	return is_paren_open(c) || is_paren_close(c);
-}
-
-
 void tokenize(const char *buf, size_t bufsize) {
 	static br_state_t state = BR_STATE_INIT;
 	static int line = 0;
@@ -121,7 +108,7 @@ void tokenize(const char *buf, size_t bufsize) {
 
 		switch (state) {
 			case BR_STATE_INIT:
-				if (c == ';') {
+				if (is_line_comment(c)) {
 					state = BR_STATE_LINE_COMMENT;
 					break;
 				}
