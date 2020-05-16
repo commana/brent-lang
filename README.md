@@ -10,6 +10,17 @@ Example:
 
 (print name)
 ```
+# Grammar
+
+```
+string ::= '"' [^\"\v]* '"'
+num    ::= [0-9]+ ( '.' [0-9]+ )?
+number ::= <num> | '-' <num>
+name   ::= [A-Za-z] [A-Za-z0-9\-\?\!]*
+atom   ::= <name> | <number> | <string>
+sexpr  ::= '(' ( <atom> | <sexpr> )* ')'
+brent  ::= <sexpr>*
+```
 
 Todos:
 
