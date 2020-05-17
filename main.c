@@ -17,21 +17,22 @@ enum brent_lang_token_states {
 };
 typedef enum brent_lang_token_states br_state_t;
 
-void tokenize(const char *buf, size_t bufsize);
+void tokenize(const char *buf, size_t bufsize, br_symbol_t **sym_table);
 int is_valid_char(char c);
-void token_add(br_token_t token);
-void token_add_id(const char *buf, int start, int end);
-void token_add_table(const char *buf, int start, int end, br_symbol_t *table); 
+void token_add_single(char c, br_token_t token, br_symbol_t **table);
+void token_add_atom(const char *buf, int start, int end, br_token_t token, br_symbol_t **table);
 
 int main(int argc, char **argv) {
 	FILE *src = fopen(argv[1], "r");
 
+	br_symbol_t *table = br_symbol_create();
 	char buf[256];
 	while(!feof(src)) {
 		int c = fread(&buf, sizeof(char), sizeof(buf) - 1, src);
 		buf[c] = '\0';
-		tokenize(buf, sizeof(buf));
+		tokenize(buf, sizeof(buf), &table);
 	}
+	br_symbol_iterate(table);
 
 	fclose(src);
 	return 0;
@@ -93,9 +94,8 @@ int is_atom(char c) {
 	return is_char(c) || is_digit(c) || is_string(c);
 }
 
-void tokenize(const char *buf, size_t bufsize) {
+void tokenize(const char *buf, size_t bufsize, br_symbol_t **sym_table) {
 	static br_state_t state = BR_STATE_INIT;
-	static br_symbol_t *sym_table = NULL;
 	static int line = 1;
 	int start = 0;
 	for (int i=0; i < bufsize; i++) {
@@ -111,11 +111,11 @@ void tokenize(const char *buf, size_t bufsize) {
 					break;
 				}
 				if (is_paren_open(c)) {
-					token_add(BR_T_PAREN_OPEN);
+					token_add_single(c, BR_T_PAREN_OPEN, sym_table);
 					break;
 				}
 				if (is_paren_close(c)) {
-					token_add(BR_T_PAREN_CLOSE);
+					token_add_single(c, BR_T_PAREN_CLOSE, sym_table);
 					break;
 				}
 				if (is_atom(c)) {
@@ -140,7 +140,7 @@ void tokenize(const char *buf, size_t bufsize) {
 				if (is_char_ext(c)) {
 					state = BR_STATE_NAME;
 				} else {
-					token_add_table(buf, start, i, sym_table);
+					token_add_atom(buf, start, i, BR_T_ID, sym_table);
 					state = BR_STATE_INIT;
 					i--; // do not consume this char
 				}
@@ -151,7 +151,7 @@ void tokenize(const char *buf, size_t bufsize) {
 				} else if (c == '.') {
 					state = BR_STATE_NUM_FLOAT;
 				} else {
-					token_add_id(buf, start, i);
+					token_add_atom(buf, start, i, BR_T_NUMBER, sym_table);
 					state = BR_STATE_INIT;
 					i--; // do not consume this char
 				}
@@ -160,14 +160,14 @@ void tokenize(const char *buf, size_t bufsize) {
 				if (is_digit(c)) {
 					state = BR_STATE_NUM_FLOAT;
 				} else {
-					token_add_id(buf, start, i);
+					token_add_atom(buf, start, i, BR_T_FLOAT, sym_table);
 					state = BR_STATE_INIT;
 					i--; // do not consume this char
 				}
 				break;
 			case BR_STATE_STRING:
 				if (is_string(c)) {
-					token_add_id(buf, start, i+1);
+					token_add_atom(buf, start, i+1, BR_T_STRING, sym_table);
 					state = BR_STATE_INIT;
 					break;
 				} else if (is_newline(c)) {
@@ -194,24 +194,17 @@ int is_valid_char(char c) {
 	return 0; 
 }
 
-void token_add(br_token_t token) {
-	printf("%d", token);
+void token_add_single(char c, br_token_t token, br_symbol_t **table) {
+	char cc[2];
+	snprintf(cc, sizeof(cc), "%c\n", c);
+	br_symbol_insert(table, token, cc);
 }
 
-void token_add_id(const char *buf, int start, int end) {
+void token_add_atom(const char *buf, int start, int end, br_token_t token, br_symbol_t **table) {
 	int len = end - start + 1;
 	char *t = malloc(sizeof(char) * len);
 	strncpy(t, &buf[start], len-1);
 	t[len-1] = '\0';
-	printf("<%s>", t);
-	free(t);
-}
-
-void token_add_table(const char *buf, int start, int end, br_symbol_t *table) {
-	int len = end - start + 1;
-	char *t = malloc(sizeof(char) * len);
-	strncpy(t, &buf[start], len-1);
-	t[len-1] = '\0';
-	br_symbol_insert(&table, BR_T_ID, t);
+	br_symbol_insert(table, token, t);
 	free(t);
 }

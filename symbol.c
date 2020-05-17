@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,3 +38,13 @@ br_symbol_t *  br_symbol_retrieve(br_symbol_t *table, br_token_t type, char *val
 	}
 	return br_symbol_retrieve(table->next, type, value);
 }
+
+void br_symbol_iterate(br_symbol_t *table) {
+	br_symbol_t *ptr = table;
+	while (ptr != NULL) {
+		printf("<%d,%s>", ptr->value.token, ptr->value.name);
+		ptr = ptr->next;
+	}
+	printf("\n");
+}
+
