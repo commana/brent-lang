@@ -1,8 +1,6 @@
 #ifndef _TOKEN_H_
 #define _TOKEN_H_
 
-struct brent_symbol_table;
-
 enum brent_lang_tokens {
 	BR_T_ID,
 	BR_T_NUMBER,
@@ -13,6 +11,15 @@ enum brent_lang_tokens {
 };
 typedef enum brent_lang_tokens br_token_t;
 
-void tokenize(const char *buf, size_t bufsize, struct brent_symbol_table **sym_table);
+struct brent_lang_token_info {
+	br_token_t type;
+	char *content;
+};
+typedef struct brent_lang_token_info br_token_info_t;
+
+struct br_token_list;
+typedef struct br_token_list br_token_list_t;
+
+void tokenize(const char *buf, size_t bufsize, br_token_list_t *list);
 
 #endif

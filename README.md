@@ -6,9 +6,19 @@ Example:
 
 ```scheme
 ; code.br
-(define name "Brentarus")
+; a full line comment
+(42 43333) ; a partial line comment
+(42.42 0.003) ; arbitrary precision numbers
 
-(print name)
+(define brentarus 42)
+(define greeting "Hello, World!")
+
+(
+	this is a
+	(multi line)
+	; :o
+	(list)
+)
 ```
 # Grammar
 
