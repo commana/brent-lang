@@ -2,12 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-enum brent_lang_tokens {
-	BR_T_ID,
-	BR_T_PAREN_OPEN,
-	BR_T_PAREN_CLOSE
-};
-typedef enum brent_lang_tokens br_token_t;
+#include "token.h"
+#include "symbol.h"
 
 enum brent_lang_token_states {
 	BR_STATE_INIT,
@@ -25,6 +21,7 @@ void tokenize(const char *buf, size_t bufsize);
 int is_valid_char(char c);
 void token_add(br_token_t token);
 void token_add_id(const char *buf, int start, int end);
+void token_add_table(const char *buf, int start, int end, br_symbol_t *table); 
 
 int main(int argc, char **argv) {
 	FILE *src = fopen(argv[1], "r");
@@ -98,6 +95,7 @@ int is_atom(char c) {
 
 void tokenize(const char *buf, size_t bufsize) {
 	static br_state_t state = BR_STATE_INIT;
+	static br_symbol_t *sym_table = NULL;
 	static int line = 1;
 	int start = 0;
 	for (int i=0; i < bufsize; i++) {
@@ -142,7 +140,7 @@ void tokenize(const char *buf, size_t bufsize) {
 				if (is_char_ext(c)) {
 					state = BR_STATE_NAME;
 				} else {
-					token_add_id(buf, start, i);
+					token_add_table(buf, start, i, sym_table);
 					state = BR_STATE_INIT;
 					i--; // do not consume this char
 				}
@@ -206,5 +204,14 @@ void token_add_id(const char *buf, int start, int end) {
 	strncpy(t, &buf[start], len-1);
 	t[len-1] = '\0';
 	printf("<%s>", t);
+	free(t);
+}
+
+void token_add_table(const char *buf, int start, int end, br_symbol_t *table) {
+	int len = end - start + 1;
+	char *t = malloc(sizeof(char) * len);
+	strncpy(t, &buf[start], len-1);
+	t[len-1] = '\0';
+	br_symbol_insert(&table, BR_T_ID, t);
 	free(t);
 }
