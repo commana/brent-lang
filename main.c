@@ -5,6 +5,19 @@
 #include "token.h"
 #include "token_list.h"
 
+void print(br_token_info_t *t) {
+	printf("<%d,%s>", t->type, t->content);
+}
+
+void topdown(br_token_info_t *t) {
+
+}
+
+void parse(br_token_list_t *list) {
+	token_list_iterate(list, &print);
+	token_list_iterate(list, &topdown);
+}
+
 int main(int argc, char **argv) {
 	FILE *src = fopen(argv[1], "r");
 
@@ -15,8 +28,9 @@ int main(int argc, char **argv) {
 		buf[c] = '\0';
 		tokenize(buf, sizeof(buf), list);
 	}
-	token_list_iterate(list);
+	parse(list);
 
+	token_list_destroy(list);
 	fclose(src);
 	return 0;
 }

@@ -32,11 +32,11 @@ void token_list_insert(br_token_list_t *list, br_token_t token, char *data) {
 	list->contents[list->index++] = info;
 }
 
-void token_list_iterate(br_token_list_t *list) {
+void token_list_iterate(br_token_list_t *list, void (*fn)(br_token_info_t *)) {
 	for (int i=0; i < list->index; i++) {
 		br_token_info_t *t = list->contents[i];
 		if (t != NULL) {
-			printf("<%d,%s>", t->type, t->content);
+			(*fn)(t);
 		}
 	}
 }
