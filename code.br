@@ -1,8 +1,10 @@
 ; a full line comment
 
-(42 43333) ; a partial line comment
+(fn 43333) ; a partial line comment
 
-(42.42 0.003) ; arbitrary precision numbers
+(fn 0.003) ; arbitrary precision numbers
+
+((apply (a (list))) as first argument)
 
 (define brentarus 42)
 

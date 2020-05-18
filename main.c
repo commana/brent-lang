@@ -4,18 +4,19 @@
 
 #include "token.h"
 #include "token_list.h"
+#include "dpda.h"
 
 void print(br_token_info_t *t) {
 	printf("<%d,%s>", t->type, t->content);
 }
 
-void topdown(br_token_info_t *t) {
-
-}
-
 void parse(br_token_list_t *list) {
 	token_list_iterate(list, &print);
-	token_list_iterate(list, &topdown);
+	printf("\n");
+
+	br_dpda_t *dpda = dpda_create();
+	dpda_transition(dpda, list, NULL);
+	dpda_destroy(dpda);
 }
 
 int main(int argc, char **argv) {

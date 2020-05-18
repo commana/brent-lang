@@ -2,12 +2,21 @@
 #define _TOKEN_H_
 
 enum brent_lang_tokens {
+	// terminals
 	BR_T_ID,
 	BR_T_NUMBER,
 	BR_T_FLOAT,
 	BR_T_STRING,
 	BR_T_PAREN_OPEN,
-	BR_T_PAREN_CLOSE
+	BR_T_PAREN_CLOSE,
+
+	// non-terminals
+	BR_N_BRENT = 100,
+	BR_N_SEXPR,
+	BR_N_OP,
+	BR_N_LIST,
+	BR_N_ATOM,
+	BR_N_NUMBER
 };
 typedef enum brent_lang_tokens br_token_t;
 

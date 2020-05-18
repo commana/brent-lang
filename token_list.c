@@ -11,6 +11,32 @@ struct br_token_list {
 	br_token_info_t **contents;
 };
 
+struct br_token_list_iterator {
+	br_token_info_t **ptr;
+};
+
+br_token_iter_t * token_list_iterator(br_token_list_t *list) {
+	br_token_iter_t *iter = malloc(sizeof(br_token_iter_t));
+	iter->ptr = list->contents;
+	return iter;
+}
+
+br_token_info_t * token_list_next(br_token_iter_t *iter) {
+	return *(iter->ptr++);
+}
+
+int token_list_has_next(br_token_iter_t *iter) {
+	return iter->ptr+1 != NULL && *(iter->ptr+1) != NULL;
+}
+
+br_token_info_t * token_list_peek(br_token_iter_t *iter) {
+	return *(iter->ptr);
+}
+
+void token_list_close_iter(br_token_iter_t *iter) {
+	free(iter);
+}
+
 br_token_list_t * token_list_create() {
 	br_token_list_t *ll = malloc(sizeof(br_token_list_t));
 	ll->size = 256;
