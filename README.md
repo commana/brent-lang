@@ -2,15 +2,19 @@
 
 A small experiment with writing an interpreter for a lisp-like language.
 
-Example:
+## Example
 
 ```scheme
-; code.br
 ; a full line comment
-(42 43333) ; a partial line comment
-(42.42 0.003) ; arbitrary precision numbers
+
+(fn 43333) ; a partial line comment
+
+(fn 0.003) ; arbitrary precision numbers
+
+((apply (a (list))) as first argument)
 
 (define brentarus 42)
+
 (define greeting "Hello, World!")
 
 (
@@ -19,8 +23,17 @@ Example:
 	; :o
 	(list)
 )
+
+; these will fail:
+; (42.xyz)
+; (42xyz)
+; (: x y)
+; (yolo:23) ; might allow this in the future
+; ("no closing quotation mark
+
 ```
-# Grammar
+
+## Grammar
 
 ```
 string ::= '"' [^\"\v]* '"'
@@ -34,11 +47,13 @@ sexpr  ::= '(' <op> <list> ')'
 brent  ::= <sexpr> <brent> | e
 ```
 
-Todos:
+## Todos
 
 - [ ] Tokenize
   - [ ] Error messages
   - [ ] Symbol table
 - [ ] Parse
+  - [ ] Error messages
+  - [ ] Abstract Syntax Tree
 - [ ] Evaluate
 
