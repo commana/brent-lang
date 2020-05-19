@@ -47,6 +47,24 @@ sexpr  ::= '(' <op> <list> ')'
 brent  ::= <sexpr> <brent> | e
 ```
 
+## Abstract Syntax Tree
+
+Here are the first three examples from above depicted as an abstract syntax tree (AST).
+
+```
+<brent>
+\
+ `<sexpr> ------ <sexpr> ------- <sexpr>
+  \              \               \
+   `fn --- 43333  `fn --- 0.003   `<sexpr> --- as --- a --- first --- argument
+                                   \
+                                    `apply --- <sexpr>
+                                               \
+                                                `a --- <sexpr>
+                                                       \
+                                                        `list
+```
+
 ## Todos
 
 - [ ] Tokenize
