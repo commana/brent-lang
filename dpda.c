@@ -3,6 +3,24 @@
 
 #include "dpda.h"
 
+enum content_type {
+	BR_CT_NONE,
+	BR_CT_INT,
+	BR_CT_FLOAT,
+	BR_CT_STRING
+};
+
+struct sexpr {
+	sexpr *first_child;
+	sexpr *next_sibling;
+	enum content_type type;
+	union content {
+		int number;
+		float floatNumber;
+		char *string;
+	} theContent;
+};
+
 struct brent_lang_dpda {
 	int size;
 	int pos; // points to the next free slot, so the stack actually starts at pos-1
