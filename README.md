@@ -23,14 +23,6 @@ A small experiment with writing an interpreter for a lisp-like language.
 	; :o
 	(list)
 )
-
-; these will fail:
-; (42.xyz)
-; (42xyz)
-; (: x y)
-; (yolo:23) ; might allow this in the future
-; ("no closing quotation mark
-
 ```
 
 ## Grammar
@@ -49,10 +41,10 @@ brent  ::= <sexpr> <brent> | e
 
 ## Abstract Syntax Tree
 
-Here are the first three examples from above depicted as an abstract syntax tree (AST).
+Here are the first three examples from above shown as an abstract syntax tree (AST).
 
 ```
-<brent>
+<sexpr>
 \
  `<sexpr> ------ <sexpr> ------- <sexpr>
   \              \               \
@@ -73,5 +65,6 @@ Here are the first three examples from above depicted as an abstract syntax tree
 - [ ] Parse
   - [ ] Error messages
   - [ ] Abstract Syntax Tree
+  - [ ] Print AST similar to example above
 - [ ] Evaluate
 
