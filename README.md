@@ -34,9 +34,25 @@ number ::= <num> | '-' <num>
 name   ::= [A-Za-z] [A-Za-z0-9\-\?\!]*
 atom   ::= <name> | <number> | <string>
 list   ::= <atom> <list> | <sexpr> <list> | e
-op     ::= <name> | <sexpr>
-sexpr  ::= '(' <op> <list> ')'
+sexpr  ::= '(' <list> ')'
 brent  ::= <sexpr> <brent> | e
+```
+
+### FIRST set
+```
+FIRST(number) = { [0-9], - }
+FIRST(atom)   = { [A-Za-z], " } U FIRST(number)
+FIRST(list)   = { e } U FIRST(atom) U FIRST(sexpr)
+FIRST(sexpr)  = { ( }
+FIRST(brent)  = { e } U FIRST(sexpr)
+```
+
+### FOLLOW set
+```
+FOLLOW(atom)  = FIRST(atom) U FIRST(sexpr) U FOLLOW(list)
+FOLLOW(list)  = { ) }
+FOLLOW(sexpr) = FOLLOW(brent)
+FOLLOW(brent) = { (, $ }
 ```
 
 ## Abstract Syntax Tree

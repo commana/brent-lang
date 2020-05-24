@@ -31,6 +31,8 @@ struct brent_lang_dpda {
 	br_token_t *stack;
 };
 
+br_sexpr_t * ast_find_last_sibling(br_sexpr_t *node);
+
 void ast_add_child(br_sexpr_t *parent, br_sexpr_t *node) {
 	if (parent->first_child == NULL) {
 		parent->first_child = node;
@@ -41,7 +43,7 @@ void ast_add_child(br_sexpr_t *parent, br_sexpr_t *node) {
 	last_sibling->next_sibling = node;
 }
 
-br_sexpr_t ast_find_last_sibling(br_sexpr_t *node) {
+br_sexpr_t * ast_find_last_sibling(br_sexpr_t *node) {
 	if (node->next_sibling == NULL) {
 		return node;
 	}
@@ -162,22 +164,8 @@ void dpda_transition(br_dpda_t *dpda, br_token_list_t *list, void *output) {
 
 					dpda_push(dpda, BR_T_PAREN_CLOSE);
 					dpda_push(dpda, BR_N_LIST);
-					dpda_push(dpda, BR_N_OP);
 					dpda_push(dpda, BR_T_PAREN_OPEN);
 					break;
-				case BR_N_OP:
-					switch (input->type) {
-						case BR_T_ID:
-							dpda_push(dpda, BR_T_ID);
-							break;
-						case BR_T_PAREN_OPEN:
-							dpda_push(dpda, BR_N_SEXPR);
-							break;
-						default:
-							fprintf(stderr, "Syntax error at input %s\n", input->content);
-							break;
-					}
-					break;		
 				case BR_N_LIST:
 					switch (input->type) {
 						case BR_T_NUMBER:
