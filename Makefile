@@ -3,7 +3,7 @@ CFLAGS=
 DEPS=
 
 LIBS=
-OBJ=main.o symbol.o token.o token_list.o dpda.o
+OBJ=main.o symbol.o token.o token_list.o dpda.o ast.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)

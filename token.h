@@ -13,7 +13,6 @@ enum brent_lang_tokens {
 	// non-terminals
 	BR_N_BRENT = 100,
 	BR_N_SEXPR,
-	BR_N_OP,
 	BR_N_LIST,
 	BR_N_ATOM,
 	BR_N_NUMBER

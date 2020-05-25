@@ -1,96 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "ast.h"
+
 #include "dpda.h"
-
-enum content_type {
-	BR_CT_NONE,
-	BR_CT_ID,
-	BR_CT_INT,
-	BR_CT_FLOAT,
-	BR_CT_STRING
-};
-
-struct br_lang_sexpr;
-typedef struct br_lang_sexpr br_sexpr_t;
-
-struct br_lang_sexpr {
-	br_sexpr_t *first_child;
-	br_sexpr_t *next_sibling;
-	enum content_type type;
-	union content {
-		int int_number;
-		float float_number;
-		char *string;
-	} node_content;
-};
 
 struct brent_lang_dpda {
 	int size;
 	int pos; // points to the next free slot, so the stack actually starts at pos-1
 	br_token_t *stack;
 };
-
-br_sexpr_t * ast_find_last_sibling(br_sexpr_t *node);
-
-void ast_add_child(br_sexpr_t *parent, br_sexpr_t *node) {
-	if (parent->first_child == NULL) {
-		parent->first_child = node;
-		return;
-	}
-	// add node to the last sibling
-	br_sexpr_t *last_sibling = ast_find_last_sibling(parent);
-	last_sibling->next_sibling = node;
-}
-
-br_sexpr_t * ast_find_last_sibling(br_sexpr_t *node) {
-	if (node->next_sibling == NULL) {
-		return node;
-	}
-	return ast_find_last_sibling(node->next_sibling);
-}
-
-br_sexpr_t * ast_create() {
-	return calloc(1, sizeof(br_sexpr_t));
-}
-
-void ast_destroy_node(br_sexpr_t *node) {
-	free(node);
-}
-
-br_sexpr_t * ast_create_sexpr() {
-	br_sexpr_t *node = ast_create();
-	node->type = BR_CT_NONE;
-	return node;
-}
-
-br_sexpr_t * ast_create_int(int value) {
-	br_sexpr_t *node = ast_create();
-	node->type = BR_CT_INT;
-	node->node_content.int_number = value;
-	return node;
-}
-
-br_sexpr_t * ast_create_float(float value) {
-	br_sexpr_t *node = ast_create();
-	node->type = BR_CT_FLOAT;
-	node->node_content.float_number = value;
-	return node;
-}
-
-br_sexpr_t * ast_create_string(char *value) {
-	br_sexpr_t *node = ast_create();
-	node->type = BR_CT_STRING;
-	node->node_content.string = value;
-	return node;
-}
-
-br_sexpr_t * ast_create_id(char *value) {
-	br_sexpr_t *node = ast_create();
-	node->type = BR_CT_ID;
-	node->node_content.string = value;
-	return node;
-}
 
 br_dpda_t * dpda_create() {
 	br_dpda_t *dpda = malloc(sizeof(br_dpda_t));
@@ -128,8 +47,15 @@ int dpda_is_empty(br_dpda_t *dpda) {
 	return dpda->pos == 0;
 }
 
-void dpda_transition(br_dpda_t *dpda, br_token_list_t *list, void *output) {
+int is_terminal(br_token_t token) {
+	// terminals are below 100, non-terminals start at >=100
+	// see token.h for numbers
+	return token < 100;
+}
+
+void dpda_transition(br_dpda_t *dpda, br_token_list_t *list, br_sexpr_t *ast) {
 	br_token_iter_t *iter = token_list_iterator(list);
+	br_sexpr_t *cur_ast = ast;
 	while (!dpda_is_empty(dpda)) {
 		br_token_t stack = dpda_pop(dpda);
 		if (!token_list_has_next(iter) && stack == BR_N_BRENT) {
@@ -137,11 +63,33 @@ void dpda_transition(br_dpda_t *dpda, br_token_list_t *list, void *output) {
 			break;
 		}
 		br_token_info_t *input = token_list_peek(iter);
-		// check terminals first (<100), then non-terminals (>=100), see token.h for numbers
-		if (stack < 100) {
+		if (is_terminal(stack)) {
 			if (stack == input->type) {
-				// TODO: If this is not a parenthese, add it to our AST???
-
+				if (stack != BR_T_PAREN_OPEN && stack != BR_T_PAREN_CLOSE) {
+					br_sexpr_t *leaf = NULL;
+					switch (stack) {
+						case BR_T_ID:
+							leaf = ast_create_id(input->content);
+							break;
+						case BR_T_NUMBER:
+							leaf = ast_create_int(99999); // TODO
+							break;
+						case BR_T_FLOAT:
+							leaf = ast_create_float(99999.9); // TODO
+							break;
+						case BR_T_STRING:
+							leaf = ast_create_string(input->content);
+							break;
+						default:
+							fprintf(stderr, "Unexpected token type %d\n", input->type);
+							break;
+					}
+					ast_add_child(cur_ast, leaf);
+				} else if (stack == BR_T_PAREN_CLOSE) {
+					// backtrack to previous ast node:
+					// a closing list means we go up one in the tree hierarchy
+					cur_ast = ast_get_parent(cur_ast); 
+				}
 				// consume (and throw away) element
 				token_list_next(iter);
 			} else {
@@ -150,6 +98,7 @@ void dpda_transition(br_dpda_t *dpda, br_token_list_t *list, void *output) {
 			}
 		} else {
 			// Non-terminals
+			br_sexpr_t *next_ast = NULL;
 			switch (stack) {
 				case BR_N_BRENT:
 					if (token_list_has_next(iter)) {
@@ -160,7 +109,9 @@ void dpda_transition(br_dpda_t *dpda, br_token_list_t *list, void *output) {
 					}
 					break;
 				case BR_N_SEXPR:
-					// TODO; Add a new sexpr node to our AST???
+					next_ast = ast_create_sexpr();
+					ast_add_child(cur_ast, next_ast);
+					cur_ast = next_ast;
 
 					dpda_push(dpda, BR_T_PAREN_CLOSE);
 					dpda_push(dpda, BR_N_LIST);
