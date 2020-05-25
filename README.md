@@ -64,7 +64,7 @@ Here are the first three examples from above shown as an abstract syntax tree (A
 \
  `<sexpr> ------ <sexpr> ------- <sexpr>
   \              \               \
-   `fn --- 43333  `fn --- 0.003   `<sexpr> --- as --- a --- first --- argument
+   `fn --- 43333  `fn --- 0.003   `<sexpr> --- as --- first --- argument
                                    \
                                     `apply --- <sexpr>
                                                \
