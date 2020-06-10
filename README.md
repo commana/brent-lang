@@ -1,6 +1,6 @@
 # Brent-Lang
 
-A small experiment with writing an interpreter for a lisp-like language.
+A small experiment with writing an interpreter/compiler for a lisp-like language.
 
 ## Example
 
@@ -83,4 +83,4 @@ Here are the first three examples from above shown as an abstract syntax tree (A
   - [ ] Abstract Syntax Tree
   - [ ] Print AST similar to example above
 - [ ] Evaluate
-
+- [ ] Compile to C
