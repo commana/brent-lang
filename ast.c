@@ -26,16 +26,16 @@ struct br_lang_sexpr {
 
 br_sexpr_t * ast_find_last_sibling(br_sexpr_t *node);
 
-void ast_add_child(br_sexpr_t *parent, br_sexpr_t *node) {
-	if (parent->first_child == NULL) {
-		parent->first_child = node;
-		node->parent = parent;
+void ast_add_child(br_sexpr_t *tree, br_sexpr_t *node) {
+	if (tree->first_child == NULL) {
+		tree->first_child = node;
+		node->parent = tree;
 		return;
 	}
 	// add node to the last sibling
-	br_sexpr_t *last_sibling = ast_find_last_sibling(parent);
+	br_sexpr_t *last_sibling = ast_find_last_sibling(tree->first_child);
 	last_sibling->next_sibling = node;
-	node->parent = parent;
+	node->parent = tree;
 }
 
 br_sexpr_t * ast_find_last_sibling(br_sexpr_t *node) {
